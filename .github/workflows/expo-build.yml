@@ -28,11 +28,14 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: 📦 Install dependencies
+        working-directory: ./conexoes-que-alimentam
         run: npm ci
 
       - name: 🚀 Build Android
+        working-directory: ./conexoes-que-alimentam
         run: eas build --platform android --non-interactive --no-wait
 
       - name: 🚀 Build iOS
+        working-directory: ./conexoes-que-alimentam
         run: eas build --platform ios --non-interactive --no-wait
 
