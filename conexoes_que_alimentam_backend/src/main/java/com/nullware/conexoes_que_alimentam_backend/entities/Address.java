@@ -43,12 +43,4 @@ public class Address {
 
     @Column(nullable = false)
     private Double longitude;
-
-    @ManyToOne
-    @JoinColumn(name = "donor_organization_id")
-    private DonorOrganization donorOrganization;
-
-    @ManyToOne
-    @JoinColumn(name = "social_organization_id")
-    private SocialOrganization socialOrganization;
 }
