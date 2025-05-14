@@ -3,6 +3,7 @@ package com.nullware.conexoes_que_alimentam_backend.entities;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.nullware.conexoes_que_alimentam_backend.dtos.UserRegisterDTO;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -23,4 +24,9 @@ import lombok.Setter;
 public class Donor extends User {
     @OneToMany(mappedBy = "donor", cascade = CascadeType.ALL)
     private List<Donation> donations = new ArrayList<>();
+
+    public Donor (UserRegisterDTO user, String password) {
+        super(user.name(), user.email(), password, user.phone(), user.address());
+    }
+
 }
