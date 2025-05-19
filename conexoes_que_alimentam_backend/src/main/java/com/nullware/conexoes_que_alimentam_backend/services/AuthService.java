@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
+  private final TokenService tokenService;
   private final UserRepo userRepo;
   private final BCryptPasswordEncoder bcrypt;
 
@@ -44,13 +45,13 @@ public class AuthService {
 
     boolean isValid = bcrypt.matches(loginDTO.password(), user.getPassword());
 
-    if(isValid) {
-      // generate token
-    } else {
+    if(!isValid) {
       throw new UnauthorizedException("Email ou senha inválidos.");
     }
 
-    return new LoginResponseDTO("");
+    String token = tokenService.generateToken(user.getId());
+
+    return new LoginResponseDTO(token);
   }
 
 }
