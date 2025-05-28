@@ -1,75 +1,94 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React from 'react';
+import { 
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView
+} from 'react-native';
+import { router } from 'expo-router';
+import { CirclePlus as PlusCircle } from 'lucide-react-native';
+import DonationCard from '@/components/DonationCard';
+import { useDonations } from '@/utils/context';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 export default function HomeScreen() {
+  const { donations } = useDonations();
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <SafeAreaView style={styles.container}>
+      {donations.length > 0 ? (
+        <FlatList
+          data={donations}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInUp.delay(index * 100).springify()}
+            >
+              <DonationCard donation={item} />
+            </Animated.View>
+          )}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      ) : (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Não há doações disponíveis no momento</Text>
+          <Text style={styles.emptySubText}>Crie uma nova doação para ajudar quem precisa</Text>
+        </View>
+      )}
+      
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={() => router.push('/create')}
+      >
+        <PlusCircle color="#ffffff" size={24} />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f8f8',
   },
-  stepContainer: {
-    gap: 8,
+  listContent: {
+    paddingVertical: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+    textAlign: 'center',
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  emptySubText: {
+    fontSize: 16,
+    color: '#757575',
+    textAlign: 'center',
+  },
+  fab: {
     position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#4caf50',
+    right: 20,
+    bottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 });
