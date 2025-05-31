@@ -1,113 +1,99 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Donation } from '@/utils/context';
-import { Calendar, Package } from 'lucide-react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { Package, Calendar, Building2 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Donation } from '../types';
 
 interface DonationCardProps {
   donation: Donation;
+  onPress?: () => void;
 }
 
-export default function DonationCard({ donation }: DonationCardProps) {
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+export function DonationCard({ donation, onPress }: DonationCardProps) {
+  const router = useRouter();
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      router.push(`/donation/${donation.id}`);
+    }
   };
 
-  // Calculate days until expiry
-  const today = new Date();
-  const expiryDate = new Date(donation.expiryDate);
-  const diffTime = Math.abs(expiryDate.getTime() - today.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  // Determine urgency color based on days until expiry
-  let urgencyColor = '#4caf50'; // Green by default
-  if (diffDays <= 3) {
-    urgencyColor = '#f44336'; // Red for urgent (3 days or less)
-  } else if (diffDays <= 7) {
-    urgencyColor = '#ff9800'; // Orange for soon (7 days or less)
-  }
-
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>{donation.title}</Text>
-      <Text style={styles.description}>{donation.description}</Text>
-      
-      <View style={styles.details}>
-        <View style={styles.detailItem}>
-          <Package size={16} color="#555555" />
-          <Text style={styles.detailText}>Quantidade: {donation.quantity}</Text>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Calendar size={16} color={urgencyColor} />
-          <Text style={[styles.detailText, { color: urgencyColor }]}>
-            Validade: {formatDate(expiryDate)}
-          </Text>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={handlePress}
+    >
+      <Image source={{ uri: donation.image }} style={styles.image} />
+      <View style={styles.info}>
+        <Text style={styles.title}>{donation.title}</Text>
+        <View style={styles.details}>
+          <View style={styles.detailItem}>
+            <Package size={14} color="#64748b" />
+            <Text style={styles.detailText}>
+              {donation.quantity} {donation.unit}
+            </Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Calendar size={14} color="#64748b" />
+            <Text style={styles.detailText}>
+              {new Date(donation.createdAt).toLocaleDateString()}
+            </Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Building2 size={14} color="#64748b" />
+            <Text style={styles.detailText}>
+              {donation.institution}
+            </Text>
+          </View>
         </View>
       </View>
-      
-      <View style={[styles.urgencyBadge, { backgroundColor: urgencyColor }]}>
-        <Text style={styles.urgencyText}>
-          {diffDays <= 3 ? 'Urgente' : diffDays <= 7 ? 'Em breve' : 'Disponível'}
-        </Text>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
+    flexDirection: 'row',
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
-    marginHorizontal: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+  },
+  image: {
+    width: 100,
+    height: 100,
+    resizeMode: 'cover',
+  },
+  info: {
+    flex: 1,
+    padding: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+    color: '#235347',
     marginBottom: 8,
-    color: '#333333'
-  },
-  description: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 16,
   },
   details: {
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
     gap: 8,
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   detailText: {
     fontSize: 14,
-    color: '#555555',
+    color: '#64748b',
   },
-  urgencyBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  urgencyText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
-  }
 });
