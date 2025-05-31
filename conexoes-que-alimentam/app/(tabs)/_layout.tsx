@@ -1,45 +1,63 @@
-import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Tabs } from 'expo-router';
+import { Home, Heart, UserCircle, MessageCircle, CookingPot, ShoppingBasket } from 'lucide-react-native';
+// import { useAuth } from '../../utils/authContext'; // useAuth seems unused here
+import { DonationProvider } from '../../utils/context';
+import ProfileButton from '@/components/ProfileButton';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
+    <DonationProvider>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: '#235347',
+          tabBarInactiveTintColor: '#94a3b8',
+          tabBarStyle: {
+            backgroundColor: '#ffffff',
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
           },
-          default: {},
-        }),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#235347',
+          },
+          headerTintColor: '#ffffff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+          headerRight: () => <ProfileButton />,
         }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="donations"
+          options={{
+            title: 'Doar',
+            tabBarIcon: ({ color, size }) => <Heart color={color} size={size} />,
+          }}
+        />
+        {/* <Tabs.Screen // Home screen (index) removed
+          name="index"
+          options={{
+            title: 'Início',
+            tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          }}
+        /> */}
+        <Tabs.Screen
+          name="cesta"
+          options={{
+            title: 'Cesta',
+            tabBarIcon: ({ color, size }) => <ShoppingBasket color={color} size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="conversas"
+          options={{
+            title: 'Conversas',
+            tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} />,
+          }}
+        />
+      </Tabs>
+    </DonationProvider>
   );
 }
