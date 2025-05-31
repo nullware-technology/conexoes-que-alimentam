@@ -1,78 +1,60 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Package, CirclePlus as PlusCircle, LogOut, User, Building2 } from 'lucide-react-native';
-import { DonationProvider } from '@/utils/context';
-import { TouchableOpacity } from 'react-native';
-import { useAuth } from '@/utils/authContext';
+import { Home, Heart, UserCircle, MessageCircle, CookingPot } from 'lucide-react-native';
+// import { useAuth } from '../../utils/authContext'; // useAuth seems unused here
+import { DonationProvider } from '../../utils/context';
+import ProfileButton from '@/components/ProfileButton';
 
 export default function TabLayout() {
-  const { signOut } = useAuth();
-
   return (
     <DonationProvider>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#4ade80',
+          tabBarActiveTintColor: '#235347',
           tabBarInactiveTintColor: '#94a3b8',
-          tabBarLabelStyle: {
-            fontSize: 12,
-          },
           tabBarStyle: {
-            borderTopWidth: 1,
-            borderTopColor: '#1a3d34',
-            backgroundColor: '#235347',
+            backgroundColor: '#ffffff',
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
           },
+          headerShown: true,
           headerStyle: {
             backgroundColor: '#235347',
           },
           headerTintColor: '#ffffff',
           headerTitleStyle: {
-            fontWeight: '600',
+            fontWeight: 'bold',
           },
-          headerRight: () => (
-            <TouchableOpacity onPress={signOut} style={{ marginRight: 16 }}>
-              <LogOut size={24} color="#ffffff" />
-            </TouchableOpacity>
-          ),
-        }}>
+          headerRight: () => <ProfileButton />,
+        }}
+      >
         <Tabs.Screen
-          name="campaigns"
+          name="donations"
           options={{
-            title: 'Campanhas',
-            tabBarLabel: 'Campanhas',
-            tabBarIcon: ({ color, size }) => (
-              <Building2 size={size} color={color} />
-            ),
+            title: 'Doar',
+            tabBarIcon: ({ color, size }) => <Heart color={color} size={size} />,
           }}
         />
-        <Tabs.Screen
+        {/* <Tabs.Screen // Home screen (index) removed
           name="index"
           options={{
-            title: 'Doações Disponíveis',
-            tabBarLabel: 'Início',
-            tabBarIcon: ({ color, size }) => (
-              <Package size={size} color={color} />
-            ),
+            title: 'Início',
+            tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          }}
+        /> */}
+        <Tabs.Screen
+          name="pantry"
+          options={{
+            title: 'Despensa',
+            tabBarIcon: ({ color, size }) => <CookingPot color={color} size={size} />,
           }}
         />
         <Tabs.Screen
-          name="create"
+          name="conversas"
           options={{
-            title: 'Criar Doação',
-            tabBarLabel: 'Nova Doação',
-            tabBarIcon: ({ color, size }) => (
-              <PlusCircle size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Meu Perfil',
-            tabBarLabel: 'Perfil',
-            tabBarIcon: ({ color, size }) => (
-              <User size={size} color={color} />
-            ),
+            title: 'Conversas',
+            tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} />,
           }}
         />
       </Tabs>
