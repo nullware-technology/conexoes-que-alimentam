@@ -19,6 +19,7 @@
       }
     },
     "android": {
+      "package": "com.nullware.conexoesquealimentam",
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_ANDROID_API_KEY"
@@ -47,6 +48,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4b040433-9241-4a3d-8932-d9b5e5782907"
+      }
+    },
+    "owner": "nullware"
   }
 }
