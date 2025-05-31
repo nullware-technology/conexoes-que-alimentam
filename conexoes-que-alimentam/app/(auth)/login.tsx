@@ -2,29 +2,45 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useAuth } from '@/utils/authContext';
 import { Heart } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Input } from '@/components/Input';
+import { Button } from '@/components/Button';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signIn } = useAuth();
+  const { signIn, isLoading } = useAuth();
+  const router = useRouter();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Campos incompletos", "Por favor, preencha email e senha.");
+      return;
+    }
+    try {
+      await signIn(email, password);
+    } catch (error) {
+      console.error("Erro no login:", error);
+      Alert.alert("Erro no Login", "Email ou senha inválidos. Tente novamente.");
+    }
+  };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Animated.View 
           entering={FadeInDown.springify()}
           style={styles.header}
@@ -35,9 +51,10 @@ export default function LoginScreen() {
           />
           <View style={styles.overlay} />
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Bem-vindo de volta</Text>
+            <Heart size={48} color="#4ade80" style={styles.headerIcon} />
+            <Text style={styles.title}>Bem-vindo de Volta</Text>
             <Text style={styles.subtitle}>
-              Juntos podemos fazer a diferença
+              Conectando corações, alimentando esperanças.
             </Text>
           </View>
         </Animated.View>
@@ -46,44 +63,40 @@ export default function LoginScreen() {
           entering={FadeInDown.delay(100).springify()}
           style={styles.form}
         >
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#94a3b8"
+          <Input
+            placeholder="Seu melhor e-mail"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Senha"
-            placeholderTextColor="#94a3b8"
+          <Input
+            placeholder="Sua senha secreta"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
           />
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => signIn(email, password)}>
-            <Text style={styles.buttonText}>Entrar</Text>
-          </TouchableOpacity>
+          <Button
+            title="Entrar na Plataforma"
+            onPress={handleLogin}
+            loading={isLoading}
+            variant="primary"
+            fullWidth
+          />
 
           <Link href="/(auth)/register" asChild>
-            <TouchableOpacity style={styles.registerButton}>
-              <Text style={styles.registerText}>Ainda não tem conta?</Text>
-              <Text style={styles.registerLink}>Cadastre-se</Text>
+            <TouchableOpacity style={styles.linkButtonContainer}>
+              <Text style={styles.linkButtonText}>Não tem uma conta? <Text style={styles.linkButtonTextHighlight}>Crie uma agora</Text></Text>
             </TouchableOpacity>
           </Link>
-
-          <View style={styles.footer}>
-            <Heart color="#ffffff" size={16} />
-            <Text style={styles.footerText}>
-              Faça parte desta rede de solidariedade
-            </Text>
-          </View>
         </Animated.View>
+
+        <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Conexões que Alimentam © {new Date().getFullYear()}
+            </Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -92,16 +105,23 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#235347',
   },
   scrollContent: {
     flexGrow: 1,
+    justifyContent: 'space-between',
   },
   header: {
-    height: 240,
+    height: Platform.OS === 'ios' ? 280 : 250,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     position: 'relative',
+    paddingBottom: 40,
+  },
+  headerIcon: {
+    marginBottom: 16,
   },
   image: {
+    ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
   },
@@ -110,70 +130,48 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(35, 83, 71, 0.7)',
   },
   titleContainer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-    right: 24,
+    alignItems: 'center',
+    paddingHorizontal: 24,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#ffffff',
+    color: '#E0E0E0',
+    textAlign: 'center',
     opacity: 0.9,
   },
   form: {
-    flex: 1,
-    padding: 24,
-    gap: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    gap: 20,
+    backgroundColor: 'transparent',
   },
-  input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 16,
-    color: '#ffffff',
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#4ade80',
-    borderRadius: 12,
-    padding: 16,
+  linkButtonContainer: {
     alignItems: 'center',
+    paddingVertical: 10,
     marginTop: 8,
   },
-  buttonText: {
-    color: '#235347',
-    fontSize: 16,
-    fontWeight: '600',
+  linkButtonText: {
+    color: '#A0A0A0',
+    fontSize: 15,
   },
-  registerButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 16,
-  },
-  registerText: {
-    color: '#ffffff',
-    opacity: 0.8,
-  },
-  registerLink: {
+  linkButtonTextHighlight: {
     color: '#4ade80',
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    padding: 20,
     alignItems: 'center',
-    gap: 8,
-    marginTop: 32,
   },
   footerText: {
-    color: '#ffffff',
-    opacity: 0.8,
+    color: '#A0A0A0',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
