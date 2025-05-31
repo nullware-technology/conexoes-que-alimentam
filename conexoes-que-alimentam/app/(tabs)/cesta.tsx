@@ -121,7 +121,7 @@ export default function PantryScreen() {
           )}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContentContainer}
-          ListHeaderComponent={() => <Text style={styles.mainTitle}>Minha Despensa</Text>}
+          ListHeaderComponent={() => <Text style={styles.mainTitle}>Minha Cesta</Text>}
         />
       )}
       <TouchableOpacity style={styles.fab} onPress={handleNavigateToAddItem}>
