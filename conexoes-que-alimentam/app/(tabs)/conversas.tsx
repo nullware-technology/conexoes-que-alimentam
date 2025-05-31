@@ -3,19 +3,30 @@ import { View, Text, FlatList, Image, StyleSheet, Pressable } from 'react-native
 import { useRouter } from 'expo-router';
 import { mockChats, Chat } from '../../constants/mockChats';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Building2, Heart, Users } from 'lucide-react-native';
+import { Building2, Heart, Users, HandHeart, PawPrint, Landmark } from 'lucide-react-native';
 
 export default function ChatsScreen() {
   const router = useRouter();
 
   const getIcon = (type: string) => {
+    const iconColor = "#4ade80"; // Existing color
+    const iconSize = 20; // Existing size
+
     switch (type) {
       case 'ONG':
-        return <Building2 size={20} color="#4ade80" />;
+        return <Building2 size={iconSize} color={iconColor} />;
       case 'Campanha':
-        return <Heart size={20} color="#4ade80" />;
+        return <Heart size={iconSize} color={iconColor} />;
+      case 'Instituição Beneficente':
+        return <HandHeart size={iconSize} color={iconColor} />;
+      case 'Iniciativa Comunitária':
+        return <Users size={iconSize} color={iconColor} />; // Keeping Users for this
+      case 'Projeto Animal':
+        return <PawPrint size={iconSize} color={iconColor} />;
+      case 'Instituição': // Generic institution
+        return <Landmark size={iconSize} color={iconColor} />;
       default:
-        return <Users size={20} color="#4ade80" />;
+        return <Users size={iconSize} color={iconColor} />; // Fallback
     }
   };
 
@@ -30,7 +41,10 @@ export default function ChatsScreen() {
         ]}
         onPress={() => router.push({
           pathname: '/chat/[id]',
-          params: { id: item.id }
+          params: { 
+            id: item.id,
+            institutionName: item.name,
+          }
         })}
       >
         <View style={styles.avatarContainer}>

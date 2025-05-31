@@ -30,57 +30,88 @@ const getChatMessages = (chatIdKey: string): ChatMessage[] => {
   return chat ? chat.messages : [];
 };
 
+// Helper to get a specific chat details by ID
+const getChatDetails = (chatIdKey: string): ChatType | undefined => {
+  return mockChats.find(c => c.id === chatIdKey);
+};
+
 export default function ChatMessageScreen() {
   const router = useRouter();
-  // Ensure types for params are correct
-  const params = useLocalSearchParams<{ id?: string; institutionName?: string }>();
-  const institutionId = params.id;
-  const institutionNameFromParams = params.institutionName;
+  const params = useLocalSearchParams<{ id?: string; institutionName?: string; chatId?: string }>();
+  
+  // Determine the primary ID to use for fetching chat data.
+  // It could be 'id' (potentially an institution ID or a direct chat ID like "chat1")
+  // or 'chatId' (explicitly a direct chat ID).
+  const routeId = params.id; // This is what comes from the [id] in the route
+  const explicitChatId = params.chatId; // This could be passed if we want to be very specific
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  // chatPartner will now primarily store name from params, and avatar if found
   const [chatPartnerInfo, setChatPartnerInfo] = useState<{ name: string; avatar?: string } | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
-  const currentUserId = 'currentUser';
+  const currentUserId = 'currentUser'; // Mock current user ID
 
   useEffect(() => {
-    if (institutionId) {
-      // Attempt to derive a chatId for mockChats (e.g., institution "1" -> mockChat "chat1")
-      const mockChatId = `chat${institutionId}`;
-      const chatMessages = getChatMessages(mockChatId);
-      setMessages(chatMessages);
+    let determinedChatId: string | undefined = undefined;
+    let partnerName: string | undefined = params.institutionName;
+    let partnerAvatar: string | undefined;
 
-      // Set chat partner info using institutionName from params
-      // and try to find an avatar from MOCK_INSTITUTIONS as a fallback
-      let avatar;
-      const institutionDetails = MOCK_INSTITUTIONS.find(inst => inst.id === institutionId);
-      if (institutionDetails) {
-        avatar = institutionDetails.logoUrl; // Or imageUrl if preferred
+    if (explicitChatId) { // If explicitChatId is provided, it takes precedence
+      determinedChatId = explicitChatId;
+    } else if (routeId) {
+      // If routeId starts with "chat" (e.g., "chat1"), it's a direct reference to mockChats
+      if (routeId.startsWith('chat')) {
+        determinedChatId = routeId;
+      } else {
+        // Otherwise, assume routeId is an institution ID (e.g., "1", "2")
+        // and construct the chatId for mockChats (e.g., "chat1", "chat2")
+        determinedChatId = `chat${routeId}`;
       }
-      
-      // If mockChat also has an avatar and we prefer it, we could use it:
-      // const mockChatDetails = mockChats.find(c => c.id === mockChatId);
-      // if (mockChatDetails?.avatar) avatar = mockChatDetails.avatar;
+    }
 
+    if (determinedChatId) {
+      const chatDetails = getChatDetails(determinedChatId);
+      if (chatDetails) {
+        setMessages(chatDetails.messages);
+        // If navigating directly with a chatId (e.g. "chat1"), use its name and avatar
+        // This also serves as a fallback if institutionName wasn't passed
+        if (!partnerName) {
+          partnerName = chatDetails.name;
+        }
+        partnerAvatar = chatDetails.avatar; // Use avatar from mockChat first
+
+        // If routeId is numerical (institution ID) and we didn't get an avatar from mockChat,
+        // try to get it from MOCK_INSTITUTIONS
+        if (!routeId?.startsWith('chat') && routeId) {
+           const institutionDetails = MOCK_INSTITUTIONS.find(inst => inst.id === routeId);
+           if (institutionDetails && institutionDetails.logoUrl) {
+            // Prefer institution logo if available and we came via institution ID
+             partnerAvatar = institutionDetails.logoUrl;
+           }
+        }
+
+      } else {
+        // Chat not found in mockChats, set empty messages
+        setMessages([]);
+        console.warn(`Chat details not found for determinedChatId: ${determinedChatId}`);
+      }
 
       setChatPartnerInfo({
-        name: institutionNameFromParams || "Chat", // Use passed name
-        avatar: avatar // Use avatar from MOCK_INSTITUTIONS if found
+        name: partnerName || "Chat", // Fallback name
+        avatar: partnerAvatar
       });
 
-      if (!institutionNameFromParams) {
-        console.warn('Institution name not provided to chat screen for ID:', institutionId);
+      if (!partnerName && routeId) {
+        console.warn('Chat partner name could not be determined for ID:', routeId);
       }
-      // If chatMessages is empty, it means no specific mock chat was found for this institutionId
-      // This is fine, it will just be an empty chat.
 
     } else {
-      // console.warn('Institution ID is missing in chat screen');
-      // router.back(); // Optionally navigate back
+      // console.warn('Chat ID is missing or could not be determined.');
+      // Consider navigating back or showing an error
+      // router.back();
     }
-  }, [institutionId, institutionNameFromParams, router]);
+  }, [routeId, params.institutionName, explicitChatId, router]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -93,9 +124,9 @@ export default function ChatMessageScreen() {
       return;
     }
     const newMessage: ChatMessage = {
-      id: String(Date.now()), // Mock ID
+      id: String(Date.now()),
       message: inputText.trim(),
-      isUser: true, // Messages sent from this screen are from the current user
+      isUser: true,
       timestamp: new Date().toISOString(),
     };
     setMessages(prevMessages => [...prevMessages, newMessage]);
@@ -120,7 +151,7 @@ export default function ChatMessageScreen() {
     );
   };
 
-  if (!institutionId) { // chatId (institutionId) is not available
+  if (!routeId && !explicitChatId) {
     return (
       <SafeAreaView style={styles.safeAreaLoading}>
          <StatusBar barStyle="dark-content" />
@@ -129,12 +160,12 @@ export default function ChatMessageScreen() {
               <ChevronLeft size={28} color="#235347" />
             </TouchableOpacity>
           ), headerTitle: "Chat Inválido" }} />
-        <Text>ID da instituição não encontrado.</Text>
+        <Text>ID do chat não encontrado.</Text>
       </SafeAreaView>
     );
   }
 
-  if (!chatPartnerInfo && institutionId) { // Still loading details or chat not found
+  if (!chatPartnerInfo && (routeId || explicitChatId)) { // Still loading details
     return (
       <SafeAreaView style={styles.safeAreaLoading}>
         <StatusBar barStyle="dark-content" />
@@ -154,11 +185,16 @@ export default function ChatMessageScreen() {
       <Stack.Screen
         options={{
           headerTitle: () => (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => {
-                if (institutionId) {
-                  router.push(`/institution/${institutionId}`);
+                // Navigate to institution detail if the id is numerical (institution id)
+                // and not a "chatX" id.
+                if (routeId && !routeId.startsWith('chat')) {
+                  router.push(`/institution/${routeId}`);
                 }
+                // If it's a chatId like "chat1", there's no specific institution page to go to
+                // unless we extract the number and assume it corresponds to an institution.
+                // For now, this click does nothing if it's a "chatX" type ID.
               }}
               style={styles.headerTouchable}
             >
