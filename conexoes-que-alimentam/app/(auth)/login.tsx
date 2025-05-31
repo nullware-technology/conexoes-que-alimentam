@@ -41,7 +41,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Animated.View 
+        <Animated.View
           entering={FadeInDown.springify()}
           style={styles.header}
         >
@@ -59,7 +59,7 @@ export default function LoginScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View 
+        <Animated.View
           entering={FadeInDown.delay(100).springify()}
           style={styles.form}
         >
