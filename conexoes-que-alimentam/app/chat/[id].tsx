@@ -187,14 +187,22 @@ export default function ChatMessageScreen() {
           headerTitle: () => (
             <TouchableOpacity
               onPress={() => {
-                // Navigate to institution detail if the id is numerical (institution id)
-                // and not a "chatX" id.
-                if (routeId && !routeId.startsWith('chat')) {
-                  router.push(`/institution/${routeId}`);
+                let institutionNumericId: string | undefined = undefined;
+
+                if (routeId) {
+                  if (routeId.startsWith('chat')) {
+                    // Extract number from "chat1", "chat2", etc.
+                    institutionNumericId = routeId.replace('chat', '');
+                  } else {
+                    // It's already a numeric ID like "1", "2"
+                    institutionNumericId = routeId;
+                  }
                 }
-                // If it's a chatId like "chat1", there's no specific institution page to go to
-                // unless we extract the number and assume it corresponds to an institution.
-                // For now, this click does nothing if it's a "chatX" type ID.
+
+                if (institutionNumericId) {
+                  router.push(`/institution/${institutionNumericId}`);
+                }
+                // If no valid ID, do nothing or log an error
               }}
               style={styles.headerTouchable}
             >
