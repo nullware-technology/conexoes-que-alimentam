@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, Heart, UserCircle, MessageCircle, CookingPot } from 'lucide-react-native';
+import { Home, Heart, UserCircle, MessageCircle, CookingPot, ShoppingBasket } from 'lucide-react-native';
 // import { useAuth } from '../../utils/authContext'; // useAuth seems unused here
 import { DonationProvider } from '../../utils/context';
 import ProfileButton from '@/components/ProfileButton';
@@ -44,10 +44,10 @@ export default function TabLayout() {
           }}
         /> */}
         <Tabs.Screen
-          name="pantry"
+          name="cesta"
           options={{
-            title: 'Despensa',
-            tabBarIcon: ({ color, size }) => <CookingPot color={color} size={size} />,
+            title: 'Cesta',
+            tabBarIcon: ({ color, size }) => <ShoppingBasket color={color} size={size} />,
           }}
         />
         <Tabs.Screen
