@@ -3,6 +3,20 @@ export interface User {
   name: string;
   email: string;
   photoURL?: string;
+  earnedBadges?: EarnedBadge[];
+}
+
+export interface EarnedBadge {
+  badgeId: string;
+  campaignName: string;
+  dateAcquired: string;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl: string;
 }
 
 export interface Donation {
@@ -15,6 +29,8 @@ export interface Donation {
   createdAt: string;
   institution: string;
   status: 'pending' | 'scheduled' | 'completed';
+  userId: string; // ID of the user who made the donation
+  pointsEarned: number; // Points earned from this donation
 }
 
 export interface SettingItem {

@@ -16,6 +16,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFood } from '@/utils/foodContext';
 import { useDonations } from '@/utils/context'; // Usaremos para adicionar a doação agendada
+import { useAuth } from '@/utils/authContext'; // Import useAuth
 import { FoodItem, Institution, Donation } from '@/types';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import {
@@ -45,6 +46,7 @@ export default function ScheduleDonationScreen() {
   const params = useLocalSearchParams<{ institutionId?: string }>();
   const { foodItems, loading: foodLoading } = useFood();
   const { addDonation } = useDonations();
+  const { user } = useAuth(); // Get user from useAuth
 
   const [institution, setInstitution] = useState<Institution | null>(null);
   const [selectablePantryItems, setSelectablePantryItems] = useState<SelectableFoodItem[]>([]); 
@@ -121,22 +123,44 @@ export default function ScheduleDonationScreen() {
     }
     if (!institution) return;
 
-    // TODO: Adicionar validação de data/hora com base na disponibilidade da instituição
+    if (!user) { // Check if user is available
+      Alert.alert('Erro de Autenticação', 'Você precisa estar logado para realizar uma doação.');
+      return;
+    }
+
+    // Calculate points
+    let totalPoints = 0;
+    itemsToDonate.forEach(item => {
+      const quantity = item.selectedQuantity;
+      switch (item.unit) {
+        case 'kg':
+        case 'liters': // Assuming 'liters' is the unit string from FoodItem type
+          totalPoints += quantity;
+          break;
+        case 'g':
+        case 'ml':
+          totalPoints += quantity / 1000;
+          break;
+        // 'units' or other units do not contribute points based on the 1 kg/L rule
+        default:
+          break;
+      }
+    });
 
     setIsLoading(true);
     try {
-      // Criar um registro de doação (exemplo simplificado)
       const newDonation: Donation = {
         id: uuid.v4() as string,
         title: `Doação para ${institution.name}`,
         description: itemsToDonate.map(item => `${item.selectedQuantity} ${item.unit} de ${item.name}`).join(', '),
         quantity: itemsToDonate.reduce((sum, item) => sum + item.selectedQuantity, 0),
-        unit: 'itens', // Pode ser mais específico se todos os itens forem da mesma unidade
-        image: itemsToDonate[0]?.imageUri || institution.imageUrl || '', // Pega a imagem do primeiro item ou da instituição
+        unit: 'itens',
+        image: itemsToDonate[0]?.imageUri || institution.imageUrl || '',
         createdAt: new Date().toISOString(),
-        institution: institution.name, // ou institution.id
+        institution: institution.name,
         status: 'scheduled',
-        // Aqui você pode adicionar mais detalhes, como os itens exatos e a data agendada
+        userId: user.id, // Add userId
+        pointsEarned: totalPoints, // Add pointsEarned
       };
       addDonation(newDonation);
       Alert.alert('Sucesso!', 'Sua doação foi agendada com sucesso.');

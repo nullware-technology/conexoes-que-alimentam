@@ -121,8 +121,7 @@ function RootLayoutNav() {
         name="donation-history" 
         options={{
           // Options are now set in app/donation-history.tsx itself
-          // but it still needs to be registered here to be navigable.
-          headerShown: false, // We let the screen itself control the header
+          // Let the screen component control its header fully.
         }}
       />
     </Stack>
