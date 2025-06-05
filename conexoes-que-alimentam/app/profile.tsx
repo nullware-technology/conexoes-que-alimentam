@@ -8,46 +8,59 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  FlatList,
 } from 'react-native';
 import { useAuth, UserProfileUpdate } from '@/utils/authContext';
 import { useDonations } from '@/utils/context';
-import { Heart, Package, Calendar, Award, Settings as SettingsIcon, LogOut, Camera, UserCog } from 'lucide-react-native';
+import { Heart, Package, Calendar, Award, Settings as SettingsIcon, LogOut, Camera, UserCog, Trophy } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Stack, useRouter } from 'expo-router';
-import { mockAvatarUrls, mockCoverUrls, DEFAULT_COVER_IMAGE } from '@/constants/imageMocks'; // Import mocks
+import { mockAvatarUrls, mockCoverUrls, DEFAULT_COVER_IMAGE } from '@/constants/imageMocks';
+import { MOCK_BADGES } from '@/utils/mockData';
+import { Badge as BadgeType, EarnedBadge as EarnedBadgeType } from '@/types';
+
+interface DisplayBadge extends BadgeType {
+  dateAcquired: string;
+  campaignName: string;
+}
 
 export default function ProfileScreen() {
   const { user, signOut, updateUserProfile } = useAuth();
   const { donations } = useDonations();
   const router = useRouter();
 
-  // State to keep track of the current index for cycling through mock images
   const [currentAvatarMockIndex, setCurrentAvatarMockIndex] = useState(0);
   const [currentCoverMockIndex, setCurrentCoverMockIndex] = useState(0);
 
   useEffect(() => {
-    // Sync mock indices with current user profile if they match
     const initialAvatarIdx = mockAvatarUrls.findIndex(url => url === user?.photoURL);
     if (initialAvatarIdx !== -1) setCurrentAvatarMockIndex(initialAvatarIdx);
-    else if (user?.photoURL) setCurrentAvatarMockIndex(0); // If custom URL, reset mock cycle
+    else if (user?.photoURL) setCurrentAvatarMockIndex(0);
 
     const initialCoverIdx = mockCoverUrls.findIndex(url => url === user?.coverURL);
     if (initialCoverIdx !== -1) setCurrentCoverMockIndex(initialCoverIdx);
-    else if (user?.coverURL) setCurrentCoverMockIndex(0); // If custom URL, reset mock cycle
-    else setCurrentCoverMockIndex(mockCoverUrls.indexOf(DEFAULT_COVER_IMAGE)); // Point to default if no user.coverURL
+    else if (user?.coverURL) setCurrentCoverMockIndex(0);
+    else setCurrentCoverMockIndex(mockCoverUrls.indexOf(DEFAULT_COVER_IMAGE));
 
   }, [user?.photoURL, user?.coverURL]);
 
-  const userDonations = donations.filter(donation => true); 
-  const activeDonations = userDonations.filter(
-    donation => donation.expiryDate && (new Date(donation.expiryDate) > new Date())
-  );
+  const userDonations = user ? donations.filter(donation => donation.userId === user.id) : [];
+  
+  const totalPointsEarned = userDonations.reduce((sum, donation) => sum + (donation.pointsEarned || 0), 0);
 
   const stats = [
     { icon: <Package size={24} color="#4ade80" />, value: userDonations.length, label: 'Total de Doações' },
-    { icon: <Calendar size={24} color="#4ade80" />, value: activeDonations.length, label: 'Doações Programadas' },
-    { icon: <Heart size={24} color="#4ade80" />, value: userDonations.length * 5, label: 'Pessoas Impactadas' },
+    { icon: <Award size={24} color="#FFD700" />, value: totalPointsEarned, label: 'Pontos Totais' },
+    { icon: <Heart size={24} color="#f87171" />, value: userDonations.length * 5, label: 'Pessoas Impactadas (est.)' },
   ];
+
+  const userEarnedBadges: DisplayBadge[] = React.useMemo(() => {
+    if (!user?.earnedBadges) return [];
+    return user.earnedBadges.map(earned => {
+      const badgeDetails = MOCK_BADGES.find(b => b.id === earned.badgeId);
+      return badgeDetails ? { ...badgeDetails, dateAcquired: earned.dateAcquired, campaignName: earned.campaignName } : null;
+    }).filter(b => b !== null) as DisplayBadge[];
+  }, [user?.earnedBadges]);
 
   const handleLogout = async () => {
     try { await signOut(); } catch (error) { console.error("Erro ao fazer logout:", error); }
@@ -65,13 +78,20 @@ export default function ProfileScreen() {
   const handleChangeCover = () => {
     const nextIndex = (currentCoverMockIndex + 1) % mockCoverUrls.length;
     const newCoverUrl = mockCoverUrls[nextIndex];
-    const updateData: UserProfileUpdate = { coverURL: newCoverUrl }; // newCoverUrl can be empty string
+    const updateData: UserProfileUpdate = { coverURL: newCoverUrl };
     updateUserProfile(updateData);
     setCurrentCoverMockIndex(nextIndex);
     Alert.alert("Banner Atualizado!", "Seu novo banner de perfil (mock) foi aplicado.");
   };
 
   const displayedCoverUrl = user?.coverURL || DEFAULT_COVER_IMAGE;
+
+  const renderBadgeItem = ({ item }: { item: DisplayBadge }) => (
+    <TouchableOpacity onPress={() => router.push('/my-badges')} style={styles.highlightedBadgeItem}>
+      <Image source={{ uri: item.iconUrl }} style={styles.highlightedBadgeIcon} />
+      <Text style={styles.highlightedBadgeName} numberOfLines={1}>{item.name}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -90,9 +110,9 @@ export default function ProfileScreen() {
       />
       <View style={styles.header}>
         <Image
-          source={{ uri: displayedCoverUrl }} // Use user.coverURL with fallback
+          source={{ uri: displayedCoverUrl }}
           style={styles.coverImage}
-          key={displayedCoverUrl} // Add key to force re-render if URI is the same but needs to refresh (e.g. cleared then set to default)
+          key={displayedCoverUrl}
         />
         <View style={styles.overlay} />
         <TouchableOpacity style={styles.editCoverButton} onPress={handleChangeCover}>
@@ -122,8 +142,22 @@ export default function ProfileScreen() {
         <Text style={styles.email}>{user?.email}</Text>
       </Animated.View>
 
+      {userEarnedBadges.length > 0 && (
+        <Animated.View style={styles.featuredBadgesContainer} entering={FadeInDown.delay(50).springify()}>
+          <Text style={styles.sectionTitle}>Medalhas em Destaque</Text>
+          <FlatList
+            data={userEarnedBadges.slice(0, 5)}
+            renderItem={renderBadgeItem}
+            keyExtractor={item => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.highlightedBadgesList}
+          />
+        </Animated.View>
+      )}
+
       <Animated.View 
-        entering={FadeInDown.delay(100).springify()}
+        entering={FadeInDown.delay(200).springify()}
         style={styles.statsContainer}
       >
         {stats.map((stat, index) => (
@@ -142,6 +176,10 @@ export default function ProfileScreen() {
         <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/edit-profile')}>
             <UserCog size={22} color="#235347" /> 
             <Text style={styles.actionItemText}>Editar Perfil</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/my-badges')}>
+            <Trophy size={22} color="#235347" />
+            <Text style={styles.actionItemText}>Minhas Medalhas</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/(settings)')}>
             <SettingsIcon size={22} color="#235347" />
@@ -250,6 +288,7 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 15,
     color: '#526D64',
+    marginBottom: 16,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -314,5 +353,45 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: '#D9534F',
     fontWeight: '600',
+  },
+  featuredBadgesContainer: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 10,
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#343a40',
+    marginBottom: 12,
+    paddingHorizontal: 10,
+  },
+  highlightedBadgesList: {
+    paddingHorizontal: 5,
+  },
+  highlightedBadgeItem: {
+    alignItems: 'center',
+    marginRight: 15,
+    width: 70,
+  },
+  highlightedBadgeIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginBottom: 5,
+    backgroundColor: '#e9ecef',
+  },
+  highlightedBadgeName: {
+    fontSize: 11,
+    color: '#495057',
+    textAlign: 'center',
   },
 });
