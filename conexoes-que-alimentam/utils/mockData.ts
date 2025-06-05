@@ -1,4 +1,4 @@
-import { Institution } from '@/types';
+import { Institution, Badge } from '@/types';
 
 export const MOCK_INSTITUTIONS: Institution[] = [
   {
@@ -80,5 +80,39 @@ export const MOCK_INSTITUTIONS: Institution[] = [
     status: 'ativa' as 'ativa' | 'fechada' | 'finalizando em breve',
     latitude: -23.5700,
     longitude: -46.6400,
+  },
+];
+
+// Define and export MOCK_BADGES
+export const MOCK_BADGES: Badge[] = [
+  {
+    id: 'badge1',
+    name: 'Doador Iniciante',
+    description: 'Realizou sua primeira doação e iniciou uma jornada de impacto!',
+    iconUrl: 'https://cdn-icons-png.flaticon.com/128/2700/2700167.png', // Placeholder: Sprout/Seedling icon
+  },
+  {
+    id: 'badge2',
+    name: 'Campeão da Generosidade',
+    description: 'Completou 5 doações, mostrando um compromisso incrível.',
+    iconUrl: 'https://cdn-icons-png.flaticon.com/128/1040/1040231.png', 
+  },
+  {
+    id: 'badge3',
+    name: 'Herói Contra a Fome',
+    description: 'Participou ativamente da campanha \'Natal Sem Fome 2024\'.',
+    iconUrl: 'https://cdn-icons-png.flaticon.com/128/3893/3893160.png', // Placeholder: Bowl of food/Helping hands
+  },
+  {
+    id: 'badge4',
+    name: 'Amigo dos Animais',
+    description: 'Apoiou uma campanha de doação para pets.',
+    iconUrl: 'https://cdn-icons-png.flaticon.com/128/194/194630.png', // Placeholder: Paw icon
+  },
+  {
+    id: 'badge5',
+    name: 'Doador Consistente',
+    description: 'Realizou doações por 3 meses seguidos.',
+    iconUrl: 'https://cdn-icons-png.flaticon.com/128/3135/3135783.png', // Placeholder: Calendar/consistency icon
   },
 ]; 
