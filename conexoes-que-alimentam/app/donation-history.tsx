@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
-import { useDonations, Donation } from '../utils/context'; // Adjusted import path
-import { Package, Calendar, MapPin, Archive } from 'lucide-react-native';
+import { useDonations } from '../utils/context'; // Adjusted import path
+import { Donation } from '@/types'; // Import Donation from @/types
+import { useAuth } from '@/utils/authContext'; // Import useAuth
+import { Package, Calendar, MapPin, Archive, Award, UserX } from 'lucide-react-native'; // Added UserX
 import { useRouter, Stack } from 'expo-router';
 
 const getStatusColor = (status: Donation['status']) => {
@@ -30,19 +33,40 @@ const getStatusText = (status: Donation['status']) => {
   }
 };
 
-const EmptyDonationHistory = () => (
-  <View style={styles.emptyContainer}>
-    <Archive size={64} color="#9ca3af" />
-    <Text style={styles.emptyText}>Seu histórico de doações está vazio.</Text>
-    <Text style={styles.emptySubText}>Quando você fizer doações, elas aparecerão aqui.</Text>
-  </View>
-);
+const EmptyDonationHistory = ({ isLoadingUser, userAvailable }: { isLoadingUser?: boolean, userAvailable?: boolean }) => {
+  if (isLoadingUser) {
+    return (
+      <View style={styles.centeredMessageContainer}>
+        <ActivityIndicator size="large" color="#235347" />
+        <Text style={styles.loadingText}>Carregando seu histórico...</Text>
+      </View>
+    );
+  }
+  if (!userAvailable) {
+    return (
+      <View style={styles.centeredMessageContainer}>
+        <UserX size={64} color="#ef4444" />
+        <Text style={styles.emptyText}>Não foi possível carregar os dados do usuário.</Text>
+        <Text style={styles.emptySubText}>Por favor, tente reiniciar o aplicativo.</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.centeredMessageContainer}>
+      <Archive size={64} color="#9ca3af" />
+      <Text style={styles.emptyText}>Seu histórico de doações está vazio.</Text>
+      <Text style={styles.emptySubText}>Quando você fizer doações, elas aparecerão aqui.</Text>
+    </View>
+  );
+};
 
 export default function DonationHistoryScreen() {
   const { donations } = useDonations();
+  const { user, isLoading: isAuthLoading } = useAuth(); // Get user and isAuthLoading
   const router = useRouter();
 
-  const userDonations = donations;
+  // Filter donations for the current user only if user is available
+  const userDonations = !isAuthLoading && user ? donations.filter(d => d.userId === user.id) : [];
 
   const sortedDonations = [...userDonations].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -68,29 +92,28 @@ export default function DonationHistoryScreen() {
         
         <View style={styles.donationDetails}>
           <View style={styles.detailItem}>
-            <Package size={16} color="#235347" />
+            <Package size={16} color="#235347" style={styles.detailIcon} />
             <Text style={styles.detailText}>
               {item.quantity} {item.unit}
             </Text>
           </View>
           
-          {item.expiryDate && (
-            <View style={styles.detailItem}>
-              <Calendar size={16} color="#235347" />
-              <Text style={styles.detailText}>
-                Validade: {new Date(item.expiryDate).toLocaleDateString('pt-BR')}
-              </Text>
-            </View>
-          )}
-          
           {item.institution && 
             <View style={styles.detailItem}>
-              <MapPin size={16} color="#235347" />
+              <MapPin size={16} color="#235347" style={styles.detailIcon} />
               <Text style={styles.detailText} numberOfLines={1}>
                 {item.institution}
               </Text>
             </View>
           }
+          {typeof item.pointsEarned === 'number' && (
+            <View style={styles.detailItem}>
+              <Award size={16} color="#B8860B" style={styles.detailIcon} />
+              <Text style={styles.detailText}>
+                {item.pointsEarned} Ponto{item.pointsEarned !== 1 ? 's' : ''}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.statusContainer}>
@@ -102,19 +125,42 @@ export default function DonationHistoryScreen() {
     </TouchableOpacity>
   );
 
+  if (isAuthLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen options={{ headerShown: true, title: 'Histórico de Doações', headerStyle: { backgroundColor: '#235347' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }}/>
+        <View style={styles.centeredMessageContainer}>
+          <ActivityIndicator size="large" color="#235347" />
+          <Text style={styles.loadingText}>Carregando seu histórico...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    // This case should ideally be handled by the AuthProvider setting a default user,
+    // but as a fallback:
+    return (
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen options={{ headerShown: true, title: 'Histórico de Doações', headerStyle: { backgroundColor: '#235347' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }}/>
+        <EmptyDonationHistory userAvailable={false} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{
+          headerShown: true,
           title: 'Histórico de Doações',
-          // Since this screen is no longer in (tabs), we need to specify its header style
           headerStyle: { backgroundColor: '#235347' },
-          headerTintColor: '#ffffff',
+          headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
         }}
       />
       {sortedDonations.length === 0 ? (
-        <EmptyDonationHistory />
+        <EmptyDonationHistory userAvailable={true} />
       ) : (
         <FlatList
           data={sortedDonations}
@@ -131,6 +177,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F0F4F8',
+  },
+  centeredMessageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#4b5563',
   },
   listContentContainer: {
     padding: 16,
@@ -170,17 +227,24 @@ const styles = StyleSheet.create({
   donationDetails: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 16,
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    backgroundColor: '#E9ECEF',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+  },
+  detailIcon: {
+    marginRight: 5,
   },
   detailText: {
     fontSize: 13,
     color: '#343a40',
+    fontWeight: '500',
   },
   statusContainer: {
     flexDirection: 'row',
@@ -209,6 +273,7 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     marginTop: 16,
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptySubText: {
     fontSize: 14,

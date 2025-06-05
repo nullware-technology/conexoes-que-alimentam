@@ -8,9 +8,10 @@ import {
   SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
-import { Package, Calendar, Building2 } from 'lucide-react-native';
+import { Package, Calendar, Building2, Award } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useDonations, Donation } from '../../utils/context';
+import { useDonations } from '../../utils/context';
+import { Donation } from '@/types';
 
 export default function DonationDetailsScreen() {
   const router = useRouter();
@@ -114,18 +115,6 @@ export default function DonationDetailsScreen() {
               </View>
             </View>
 
-            {donation.expiryDate && (
-              <View style={styles.detailItem}>
-                <Calendar size={20} color="#E67E22" style={styles.detailIcon} />
-                <View style={styles.detailTextContainer}>
-                  <Text style={styles.detailLabel}>Validade dos Itens</Text>
-                  <Text style={styles.detailValue}>
-                    {new Date(donation.expiryDate).toLocaleDateString('pt-BR', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </Text>
-                </View>
-              </View>
-            )}
-
             <View style={styles.detailItem}>
               <Building2 size={20} color="#235347" style={styles.detailIcon} />
               <View style={styles.detailTextContainer}>
@@ -133,6 +122,18 @@ export default function DonationDetailsScreen() {
                 <Text style={styles.detailValue}>{donation.institution}</Text>
               </View>
             </View>
+
+            {typeof donation.pointsEarned === 'number' && (
+              <View style={styles.detailItem}>
+                <Award size={20} color="#B8860B" style={styles.detailIcon} />
+                <View style={styles.detailTextContainer}>
+                  <Text style={styles.detailLabel}>Pontos Ganhos</Text>
+                  <Text style={styles.detailValue}>
+                    {donation.pointsEarned} Ponto{donation.pointsEarned !== 1 ? 's' : ''}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
