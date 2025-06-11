@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,16 @@ import {
   Platform,
   Alert,
   FlatList,
+  SafeAreaView,
+  StatusBar
 } from 'react-native';
 import { useAuth, UserProfileUpdate } from '@/utils/authContext';
 import { useDonations } from '@/utils/context';
-import { Heart, Package, Calendar, Award, Settings as SettingsIcon, LogOut, Camera, UserCog, Trophy } from 'lucide-react-native';
+import { Heart, Package, Calendar, Award, Settings as SettingsIcon, LogOut, Camera, UserCog, Trophy, BarChart4, ChevronRight } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Stack, useRouter } from 'expo-router';
 import { mockAvatarUrls, mockCoverUrls, DEFAULT_COVER_IMAGE } from '@/constants/imageMocks';
-import { MOCK_BADGES } from '@/utils/mockData';
+import { MOCK_BADGES, MOCK_DONATIONS } from '@/utils/mockData';
 import { Badge as BadgeType, EarnedBadge as EarnedBadgeType } from '@/types';
 
 interface DisplayBadge extends BadgeType {
@@ -44,17 +46,12 @@ export default function ProfileScreen() {
 
   }, [user?.photoURL, user?.coverURL]);
 
-  const userDonations = user ? donations.filter(donation => donation.userId === user.id) : [];
+  const userDonations = MOCK_DONATIONS;
   
   const totalPointsEarned = userDonations.reduce((sum, donation) => sum + (donation.pointsEarned || 0), 0);
+  const peopleImpacted = userDonations.reduce((sum, d) => sum + (d.peopleImpacted || 0), 0);
 
-  const stats = [
-    { icon: <Package size={24} color="#4ade80" />, value: userDonations.length, label: 'Total de Doações' },
-    { icon: <Award size={24} color="#FFD700" />, value: totalPointsEarned, label: 'Pontos Totais' },
-    { icon: <Heart size={24} color="#f87171" />, value: userDonations.length * 5, label: 'Pessoas Impactadas (est.)' },
-  ];
-
-  const userEarnedBadges: DisplayBadge[] = React.useMemo(() => {
+  const userEarnedBadges: DisplayBadge[] = useMemo(() => {
     if (!user?.earnedBadges) return [];
     return user.earnedBadges.map(earned => {
       const badgeDetails = MOCK_BADGES.find(b => b.id === earned.badgeId);
@@ -93,107 +90,95 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   );
 
+  const StatItem: React.FC<{ icon: React.ReactNode, value: string | number, label: string }> = ({ icon, value, label }) => (
+    <View style={styles.statItem}>
+      {icon}
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+
+  const ActionItem: React.FC<{icon: React.ReactNode, text: string, onPress: () => void, isDestructive?: boolean}> = 
+  ({ icon, text, onPress, isDestructive }) => (
+    <TouchableOpacity style={styles.actionItem} onPress={onPress}>
+        <View style={styles.actionIconContainer}>{icon}</View>
+        <Text style={[styles.actionItemText, isDestructive && {color: '#D9534F'}]}>{text}</Text>
+        {!isDestructive && <ChevronRight size={20} color={'#ccc'} />}
+    </TouchableOpacity>
+  );
+
   return (
     <ScrollView style={styles.container}>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          title: 'Meu Perfil',
-          headerStyle: { backgroundColor: '#235347' },
-          headerTintColor: '#fff',
-          headerRight: () => (
-            <TouchableOpacity onPress={() => router.push('/(settings)')} style={{ marginRight: 15 }}>
-              <SettingsIcon size={24} color="#fff" />
-            </TouchableOpacity>
-          ),
-        }}
-      />
-      <View style={styles.header}>
-        <Image
-          source={{ uri: displayedCoverUrl }}
-          style={styles.coverImage}
-          key={displayedCoverUrl}
-        />
+      <StatusBar barStyle="light-content" />
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <Animated.View style={styles.header} entering={FadeInDown.duration(500)}>
+        <Image source={{ uri: displayedCoverUrl }} style={styles.coverImage}/>
         <View style={styles.overlay} />
-        <TouchableOpacity style={styles.editCoverButton} onPress={handleChangeCover}>
-          <Camera size={20} color="#fff" />
-          <Text style={styles.editButtonText}>Trocar Capa</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Animated.View 
-        entering={FadeInDown.springify()}
-        style={styles.profileInfo}
-      >
-        <View style={styles.avatarContainer}>
-          {user?.photoURL ? (
-            <Image source={{ uri: user.photoURL }} style={styles.avatarImage} key={user.photoURL} />
-          ) : (
-            <Image source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=4ade80&color=235347&size=120` }} style={styles.avatarImage} />
-          )}
-          <TouchableOpacity style={styles.editAvatarButton} onPress={handleChangeAvatar}>
-            <Camera size={18} color="#fff" />
+        <SafeAreaView style={{position: 'absolute', top: 0, left: 0, right: 0}}>
+          <View style={styles.headerTopRow}>
+              <Text style={styles.headerTitle}>Meu Perfil</Text>
+              <TouchableOpacity onPress={() => router.push('/(settings)')}>
+                <SettingsIcon size={24} color="#fff" />
+              </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Animated.View>
+      
+      <View style={styles.profileContent}>
+        <View style={styles.avatarRow}>
+          <Animated.View style={styles.avatarContainer} entering={FadeInDown.delay(200).springify()}>
+              {user?.photoURL ? 
+                <Image source={{ uri: user.photoURL }} style={styles.avatarImage} /> : 
+                <Image source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=4ade80&color=235347&size=128` }} style={styles.avatarImage} />}
+          </Animated.View>
+          <TouchableOpacity style={styles.editAvatarButton} onPress={() => Alert.alert('Editar Avatar', 'Funcionalidade em desenvolvimento.')}>
+            <Camera size={18} color="#fff"/>
           </TouchableOpacity>
-          <View style={styles.badgeContainer}>
-            <Award size={16} color="#235347" />
-          </View>
         </View>
-        <Text style={styles.name}>{user?.name}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-      </Animated.View>
 
-      {userEarnedBadges.length > 0 && (
-        <Animated.View style={styles.featuredBadgesContainer} entering={FadeInDown.delay(50).springify()}>
-          <Text style={styles.sectionTitle}>Medalhas em Destaque</Text>
-          <FlatList
-            data={userEarnedBadges.slice(0, 5)}
-            renderItem={renderBadgeItem}
-            keyExtractor={item => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.highlightedBadgesList}
-          />
+        <Animated.View entering={FadeInDown.delay(300)}>
+          <Text style={styles.name}>{user?.name || 'Usuário Convidado'}</Text>
+          <Text style={styles.email}>{user?.email}</Text>
         </Animated.View>
-      )}
 
-      <Animated.View 
-        entering={FadeInDown.delay(200).springify()}
-        style={styles.statsContainer}
-      >
-        {stats.map((stat, index) => (
-          <View key={index} style={styles.statItem}>
-            {stat.icon}
-            <Text style={styles.statValue}>{stat.value}</Text>
-            <Text style={styles.statLabel}>{stat.label}</Text>
+        {userEarnedBadges.length > 0 && (
+          <Animated.View style={styles.card} entering={FadeInDown.delay(400).springify()}>
+            <Text style={styles.sectionTitle}>Medalhas em Destaque</Text>
+            <FlatList
+              data={userEarnedBadges.slice(0, 5)}
+              renderItem={renderBadgeItem}
+              keyExtractor={item => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{paddingVertical: 10}}
+            />
+          </Animated.View>
+        )}
+
+        <Animated.View style={styles.card} entering={FadeInDown.delay(500).springify()}>
+          <Text style={styles.sectionTitle}>Minhas Estatísticas</Text>
+          <View style={styles.statsGrid}>
+            <StatItem icon={<Package size={28} color="#4ade80" />} value={userDonations.length} label="Doações" />
+            <StatItem icon={<Award size={28} color="#FFD700" />} value={totalPointsEarned} label="Pontos" />
+            <StatItem icon={<Heart size={28} color="#f87171" />} value={peopleImpacted} label="Vidas Impactadas" />
           </View>
-        ))}
-      </Animated.View>
+        </Animated.View>
 
-      <Animated.View 
-        entering={FadeInDown.delay(200).springify()}
-        style={styles.actionsSection}
-      >
-        <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/edit-profile')}>
-            <UserCog size={22} color="#235347" /> 
-            <Text style={styles.actionItemText}>Editar Perfil</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/my-badges')}>
-            <Trophy size={22} color="#235347" />
-            <Text style={styles.actionItemText}>Minhas Medalhas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/(settings)')}>
-            <SettingsIcon size={22} color="#235347" />
-            <Text style={styles.actionItemText}>Configurações</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/donation-history')}>
-            <Calendar size={22} color="#235347" />
-            <Text style={styles.actionItemText}>Histórico de Doações</Text>
-        </TouchableOpacity>
-         <TouchableOpacity style={[styles.actionItem, styles.logoutButton]} onPress={handleLogout}>
-            <LogOut size={22} color="#D9534F" />
-            <Text style={[styles.actionItemText, styles.logoutButtonText]}>Sair</Text>
-        </TouchableOpacity>
-      </Animated.View>
+        <Animated.View entering={FadeInDown.delay(600).springify()}>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/dashboard')}>
+                <BarChart4 size={20} color="#fff" />
+                <Text style={styles.primaryButtonText}>Ver Meu Dashboard Detalhado</Text>
+            </TouchableOpacity>
+        </Animated.View>
+
+        <Animated.View style={styles.card} entering={FadeInDown.delay(700).springify()}>
+            <ActionItem icon={<UserCog size={20} color="#235347" />} text="Editar Perfil" onPress={() => router.push('/edit-profile')} />
+            <ActionItem icon={<Trophy size={20} color="#235347" />} text="Todas as Minhas Medalhas" onPress={() => router.push('/my-badges')} />
+            <ActionItem icon={<Calendar size={20} color="#235347" />} text="Histórico de Doações" onPress={() => router.push('/donation-history')} />
+            <ActionItem icon={<LogOut size={20} color="#D9534F" />} text="Sair" onPress={handleLogout} isDestructive />
+        </Animated.View>
+      </View>
     </ScrollView>
   );
 }
@@ -204,194 +189,183 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F4F8',
   },
   header: {
-    height: 200, 
-    position: 'relative',
+    height: 200,
+    backgroundColor: '#235347',
   },
   coverImage: {
+    ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
-    backgroundColor: '#E0E0E0',
+    opacity: 0.3,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(35, 83, 71, 0.4)',
   },
-  editCoverButton: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+  headerTopRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    marginLeft: 5,
-  },
-  profileInfo: {
-    alignItems: 'center',
-    marginTop: -60, 
     paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 10,
   },
-  avatarContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#4ade80',
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  profileContent: {
+    marginTop: -80,
+    paddingHorizontal: 20,
+  },
+  avatarRow: {
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
     position: 'relative',
+    width: 140,
+    alignSelf: 'center'
+  },
+  avatarContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#fff',
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 10,
   },
   avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 56, 
+    borderRadius: 65,
   },
   editAvatarButton: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 8,
-    borderRadius: 20, 
-  },
-  badgeContainer: {
-    position: 'absolute',
     bottom: 5,
-    left: 5, 
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    padding: 6,
-    borderWidth: 1,
-    borderColor: '#235347',
-    elevation: 6,
+    right: 5,
+    backgroundColor: '#235347',
+    padding: 8,
+    borderRadius: 20
   },
   name: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#1A2E27',
-    marginTop: 16,
-    marginBottom: 4,
+    color: '#2c3e50',
+    textAlign: 'center',
+    marginTop: 15,
   },
   email: {
-    fontSize: 15,
-    color: '#526D64',
-    marginBottom: 16,
+    fontSize: 16,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    marginBottom: 20,
   },
-  statsContainer: {
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 15,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#235347',
+    marginBottom: 10,
+    paddingHorizontal: 5,
+  },
+  highlightedBadgeItem: {
+    alignItems: 'center',
+    marginRight: 15,
+    width: 80,
+  },
+  highlightedBadgeIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: '#4ade80',
+    marginBottom: 5
+  },
+  highlightedBadgeName: {
+    fontSize: 12,
+    color: '#34495e',
+    textAlign: 'center',
+  },
+  statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 20,
-    paddingHorizontal: 10,
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    elevation: 3,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    marginBottom: 20,
+    paddingVertical: 10,
   },
   statItem: {
     alignItems: 'center',
     flex: 1,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#235347',
+    color: '#2c3e50',
     marginTop: 8,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#64748b',
+    fontSize: 13,
+    color: '#7f8c8d',
     marginTop: 4,
-    textAlign: 'center',
-  },
-  actionsSection: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    paddingVertical: 8,
-    elevation: 3,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    marginBottom: 20,
   },
   actionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F4F8',
+    borderBottomColor: 'rgba(0,0,0,0.05)'
   },
-  actionItemText: {
-    marginLeft: 16,
-    fontSize: 16,
-    color: '#334155',
-    fontWeight: '500',
-  },
-  logoutButton: {
-    borderBottomWidth: 0,
-  },
-  logoutButtonText: {
-    color: '#D9534F',
-    fontWeight: '600',
-  },
-  featuredBadgesContainer: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#235347',
     borderRadius: 16,
     paddingVertical: 16,
-    paddingHorizontal: 10,
-    elevation: 3,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#343a40',
-    marginBottom: 12,
-    paddingHorizontal: 10,
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
-  highlightedBadgesList: {
-    paddingHorizontal: 5,
+  destructiveAction: {
+    justifyContent: 'center',
+    paddingTop: 15,
+    marginTop: 5,
+    borderBottomWidth: 0,
   },
-  highlightedBadgeItem: {
+  actionIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F0F4F8',
     marginRight: 15,
-    width: 70,
   },
-  highlightedBadgeIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginBottom: 5,
-    backgroundColor: '#e9ecef',
-  },
-  highlightedBadgeName: {
-    fontSize: 11,
-    color: '#495057',
-    textAlign: 'center',
+  actionItemText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2c3e50',
+    fontWeight: '500'
   },
 });
