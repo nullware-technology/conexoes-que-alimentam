@@ -1,4 +1,4 @@
-import { Institution, Badge } from '@/types';
+import { Institution, Badge, Donation } from '@/types';
 
 export const MOCK_INSTITUTIONS: Institution[] = [
   {
@@ -115,4 +115,32 @@ export const MOCK_BADGES: Badge[] = [
     description: 'Realizou doações por 3 meses seguidos.',
     iconUrl: 'https://cdn-icons-png.flaticon.com/128/3135/3135783.png', // Placeholder: Calendar/consistency icon
   },
-]; 
+];
+
+export const MOCK_DONATIONS: Donation[] = Array.from({ length: 50 }, (_, i) => {
+  const date = new Date();
+  // Create a clearer time progression, spreading donations over the last 200 days
+  date.setDate(date.getDate() - (200 - i * 4) - Math.floor(Math.random() * 4));
+
+  // Create an upward trend for points over time, adding some noise
+  const basePoints = 10 + (i * 0.8);
+  const points = Math.floor(basePoints + Math.random() * 15);
+
+  // Make 'peopleImpacted' more directly correlated with points
+  const peopleImpacted = Math.max(1, Math.round(points / 7) + (Math.random() > 0.5 ? 1 : 0));
+  
+  return {
+    id: `don-${i + 1}`,
+    title: `Doação de Alimentos ${i + 1}`,
+    description: 'Cesta básica de alimentos não perecíveis.',
+    quantity: 1,
+    unit: 'unidade',
+    image: `https://picsum.photos/seed/${i}/200/300`,
+    createdAt: date.toISOString(),
+    institution: `Instituição Parceira ${String.fromCharCode(65 + (i % 5))}`,
+    status: 'completed' as const,
+    userId: 'mock-user-123',
+    pointsEarned: points,
+    peopleImpacted: peopleImpacted,
+  };
+}).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); 

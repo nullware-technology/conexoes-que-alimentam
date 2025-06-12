@@ -10,7 +10,7 @@ export default function DashboardScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Meu Dashboard Completo',
+          title: 'Meu Dashboard',
           headerStyle: { backgroundColor: '#235347' },
           headerTintColor: '#fff',
           headerBackTitle: 'Perfil',
@@ -28,4 +28,4 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0F4F8',
   },
-}); 
+});

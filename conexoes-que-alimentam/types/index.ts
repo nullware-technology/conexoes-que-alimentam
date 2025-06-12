@@ -31,6 +31,7 @@ export interface Donation {
   status: 'pending' | 'scheduled' | 'completed';
   userId: string; // ID of the user who made the donation
   pointsEarned: number; // Points earned from this donation
+  peopleImpacted?: number; // Estimated number of people impacted by this donation
 }
 
 export interface SettingItem {
